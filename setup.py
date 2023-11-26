@@ -12,7 +12,8 @@ ext_modules=[
 
 ]
 
-
+# python setup.py build_ext --inplace
+# --inplace  编译出的扩展模块直接放置在源代码所在的目录,而不是在 build 目录下
 setup(
     ext_modules = cythonize("hello.pyx", compiler_directives={'language_level' : "3"})
 )
