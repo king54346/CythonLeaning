@@ -9,7 +9,7 @@ Cython程序如何调用外部C代码
 Cython的方式
 1：编写 C 代码
 2：编写 Cython 封装(cdef extern from "xxxx.h":)
-3：创建 Setup 脚本(Extension("example", ["xxxx.pyx", "xxxxx.c"]))
+3：创建 Setup 脚本 cythonize([Extension("example", ["xxxx.pyx", "xxxxx.c"])])或者cythonize("xxxx.pyx", compiler_directives={'language_level' : "3"})
 4：构建模块
 
 ctype的方式
@@ -122,11 +122,12 @@ cdef vector[int] xxxx(int n)
 cython内存视图：高效访问内存数组数据的机制(如 C 数组、NumPy 数组等)
 内存视图声明
 cdef int[:] c_array_view c_array_view为内存视图，可以赋值c和numpy(动态数组类型和高级数组操作，性能不如静态类型内存视图，但是没有高级功能)
-
+获取cap：shape[index]
 内存视图是对数组数据的引用，允许在不同数组之间安全、高效地共享数据 
 避免数据复制:内存视图允许直接访问底层数据，而不需要复制数据，这对于处理大型数组非常重要。
 底层优化:类型化和 Cython 的编译特性使得访问内存视图中的数据非常快。
 当内存视图操作只涉及到原始数据（如整数、浮点数）且不涉及到 Python 对象的创建或修改时，这些操作可以不受 GIL 的限制，从而在多线程环境中获得更好的性能
+
 
 初始化方案：
 malloc的初始化方案(需要手动管理内存)和cpython.array的初始化方案。优先使用cpython.array初始化方案。
@@ -168,5 +169,17 @@ with nogil,parallel(num_threads=2):
    pass
 
 
+默认情况下，将数据从 C++ std::vector 复制到 Python numpy.ndarray
+cdef extern from "<vector>" namespace "std":
+    cdef cppclass vector[T]:
+        T& at(T) nogil
+        size_t size() nogil
 
-https://www.zhihu.com/people/xie-zhu-93-61/posts?page=3
+cdef double* get_vector_data(vector[double]& v) nogil:
+    return &v.at(0)
+
+def vector_to_numpy(vector[double]& v):
+    cdef np.npy_intp size = v.size()
+    cdef double* data = get_vector_data(v)
+    cdef np.ndarray arr = np.PyArray_SimpleNewFromData(1, &size, np.NPY_DOUBLE, <void*>data)
+    return arr
