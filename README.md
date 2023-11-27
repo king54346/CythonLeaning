@@ -169,7 +169,7 @@ with nogil,parallel(num_threads=2):
    pass
 
 
-默认情况下，将数据从 C++ std::vector 复制到 Python numpy.ndarray
+将数据从 C++ std::vector 复制到 Python numpy.ndarray,并且不需要copy的方法
 cdef extern from "<vector>" namespace "std":
     cdef cppclass vector[T]:
         T& at(T) nogil
